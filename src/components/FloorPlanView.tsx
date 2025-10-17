@@ -181,6 +181,7 @@ export const FloorPlanView = () => {
       const containerRect = containerRef.current.getBoundingClientRect();
       const deltaX = ((e.clientX - dragStartPos.current.x) / containerRect.width) * 100;
       const deltaY = ((e.clientY - dragStartPos.current.y) / containerRect.height) * 100;
+      const dragStart = dragStartPos.current;
 
       setEditableZones(prev =>
         prev.map(zone =>
@@ -189,8 +190,8 @@ export const FloorPlanView = () => {
                 ...zone,
                 position: {
                   ...zone.position,
-                  x: Math.max(0, Math.min(100 - zone.position.width, dragStartPos.current!.zoneX + deltaX)),
-                  y: Math.max(0, Math.min(100 - zone.position.height, dragStartPos.current!.zoneY + deltaY)),
+                  x: Math.max(0, Math.min(100 - zone.position.width, dragStart.zoneX + deltaX)),
+                  y: Math.max(0, Math.min(100 - zone.position.height, dragStart.zoneY + deltaY)),
                 },
               }
             : zone
@@ -202,13 +203,13 @@ export const FloorPlanView = () => {
       const containerRect = containerRef.current.getBoundingClientRect();
       const deltaX = ((e.clientX - resizeStartPos.current.x) / containerRect.width) * 100;
       const deltaY = ((e.clientY - resizeStartPos.current.y) / containerRect.height) * 100;
+      const start = resizeStartPos.current;
 
       setEditableZones(prev =>
         prev.map(zone => {
           if (zone.id !== resizingZone.id) return zone;
 
           const { handle } = resizingZone;
-          const start = resizeStartPos.current!;
           let newPos = { ...zone.position };
 
           if (handle.includes('e')) {
