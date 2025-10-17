@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AirVent, Lightbulb, Plug, Thermometer, PowerOff } from "lucide-react";
+import { AirVent, Lightbulb, Plug, Thermometer, PowerOff, Edit, Save, GripVertical } from "lucide-react";
+import { toast } from "sonner";
 import floorPlanBg from "@/assets/floor-plan-bg.jpg";
 
 interface Zone {
@@ -115,6 +116,13 @@ const zones: Zone[] = [
 export const FloorPlanView = () => {
   const [hoveredZone, setHoveredZone] = useState<string | null>(null);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editableZones, setEditableZones] = useState<Zone[]>(zones);
+  const [draggingZone, setDraggingZone] = useState<string | null>(null);
+  const [resizingZone, setResizingZone] = useState<{ id: string; handle: string } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragStartPos = useRef<{ x: number; y: number; zoneX: number; zoneY: number } | null>(null);
+  const resizeStartPos = useRef<{ x: number; y: number; width: number; height: number; posX: number; posY: number } | null>(null);
 
   const handleZoneClick = (zoneId: string) => {
     setSelectedZone(zoneId === selectedZone ? null : zoneId);
@@ -124,8 +132,136 @@ export const FloorPlanView = () => {
     console.log(`关闭 ${zoneId} 的所有 ${deviceType}`);
   };
 
+  const toggleEditMode = () => {
+    if (isEditMode) {
+      // 保存时输出配置
+      console.log("保存的区域配置：", JSON.stringify(editableZones, null, 2));
+      toast.success("区域配置已保存到控制台");
+    }
+    setIsEditMode(!isEditMode);
+  };
+
+  const handleMouseDown = (e: React.MouseEvent, zoneId: string, handle?: string) => {
+    if (!isEditMode) return;
+    e.stopPropagation();
+    
+    if (handle) {
+      // 调整大小
+      const zone = editableZones.find(z => z.id === zoneId);
+      if (!zone || !containerRef.current) return;
+      
+      setResizingZone({ id: zoneId, handle });
+      resizeStartPos.current = {
+        x: e.clientX,
+        y: e.clientY,
+        width: zone.position.width,
+        height: zone.position.height,
+        posX: zone.position.x,
+        posY: zone.position.y,
+      };
+    } else {
+      // 拖动
+      const zone = editableZones.find(z => z.id === zoneId);
+      if (!zone) return;
+      
+      setDraggingZone(zoneId);
+      dragStartPos.current = {
+        x: e.clientX,
+        y: e.clientY,
+        zoneX: zone.position.x,
+        zoneY: zone.position.y,
+      };
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isEditMode) return;
+
+    if (draggingZone && dragStartPos.current && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const deltaX = ((e.clientX - dragStartPos.current.x) / containerRect.width) * 100;
+      const deltaY = ((e.clientY - dragStartPos.current.y) / containerRect.height) * 100;
+
+      setEditableZones(prev =>
+        prev.map(zone =>
+          zone.id === draggingZone
+            ? {
+                ...zone,
+                position: {
+                  ...zone.position,
+                  x: Math.max(0, Math.min(100 - zone.position.width, dragStartPos.current!.zoneX + deltaX)),
+                  y: Math.max(0, Math.min(100 - zone.position.height, dragStartPos.current!.zoneY + deltaY)),
+                },
+              }
+            : zone
+        )
+      );
+    }
+
+    if (resizingZone && resizeStartPos.current && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const deltaX = ((e.clientX - resizeStartPos.current.x) / containerRect.width) * 100;
+      const deltaY = ((e.clientY - resizeStartPos.current.y) / containerRect.height) * 100;
+
+      setEditableZones(prev =>
+        prev.map(zone => {
+          if (zone.id !== resizingZone.id) return zone;
+
+          const { handle } = resizingZone;
+          const start = resizeStartPos.current!;
+          let newPos = { ...zone.position };
+
+          if (handle.includes('e')) {
+            newPos.width = Math.max(5, Math.min(100 - start.posX, start.width + deltaX));
+          }
+          if (handle.includes('w')) {
+            const newWidth = Math.max(5, start.width - deltaX);
+            const newX = Math.max(0, start.posX + (start.width - newWidth));
+            newPos.x = newX;
+            newPos.width = newWidth;
+          }
+          if (handle.includes('s')) {
+            newPos.height = Math.max(5, Math.min(100 - start.posY, start.height + deltaY));
+          }
+          if (handle.includes('n')) {
+            const newHeight = Math.max(5, start.height - deltaY);
+            const newY = Math.max(0, start.posY + (start.height - newHeight));
+            newPos.y = newY;
+            newPos.height = newHeight;
+          }
+
+          return { ...zone, position: newPos };
+        })
+      );
+    }
+  };
+
+  const handleMouseUp = () => {
+    setDraggingZone(null);
+    setResizingZone(null);
+    dragStartPos.current = null;
+    resizeStartPos.current = null;
+  };
+
   return (
     <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">平面图视图</h2>
+        <Button onClick={toggleEditMode} variant={isEditMode ? "default" : "outline"}>
+          {isEditMode ? (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              保存配置
+            </>
+          ) : (
+            <>
+              <Edit className="h-4 w-4 mr-2" />
+              编辑区域
+            </>
+          )}
+        </Button>
+      </div>
+      
       <Card className="p-6">
         <div className="relative w-full" style={{ paddingBottom: "70%" }}>
           {/* Background image */}
@@ -138,42 +274,80 @@ export const FloorPlanView = () => {
           />
           
           {/* Floor plan overlay */}
-          <div className="absolute inset-0">
-            {zones.map((zone) => {
+          <div 
+            ref={containerRef}
+            className="absolute inset-0"
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            {editableZones.map((zone) => {
               const isHovered = hoveredZone === zone.id;
               const isSelected = selectedZone === zone.id;
               
               return (
                 <div
                   key={zone.id}
-                  className="absolute border-2 border-gray-400 cursor-pointer transition-all duration-300"
+                  className="absolute border-2 border-gray-400 transition-all duration-300"
                   style={{
                     left: `${zone.position.x}%`,
                     top: `${zone.position.y}%`,
                     width: `${zone.position.width}%`,
                     height: `${zone.position.height}%`,
                     backgroundColor: zone.color,
-                    borderWidth: isHovered || isSelected ? "3px" : "2px",
-                    borderColor: isHovered || isSelected ? "#2563eb" : "#9ca3af",
-                    zIndex: isHovered ? 10 : 1,
+                    borderWidth: isHovered || isSelected || isEditMode ? "3px" : "2px",
+                    borderColor: isEditMode ? "#10b981" : (isHovered || isSelected ? "#2563eb" : "#9ca3af"),
+                    zIndex: isHovered || draggingZone === zone.id ? 10 : 1,
+                    cursor: isEditMode ? "move" : "pointer",
                   }}
-                  onMouseEnter={() => setHoveredZone(zone.id)}
-                  onMouseLeave={() => setHoveredZone(null)}
-                  onClick={() => handleZoneClick(zone.id)}
+                  onMouseEnter={() => !isEditMode && setHoveredZone(zone.id)}
+                  onMouseLeave={() => !isEditMode && setHoveredZone(null)}
+                  onClick={() => !isEditMode && handleZoneClick(zone.id)}
+                  onMouseDown={(e) => handleMouseDown(e, zone.id)}
                 >
-                  <div className="flex h-full items-center justify-center">
+                  <div className="flex h-full items-center justify-center pointer-events-none">
                     <div className="text-center">
+                      {isEditMode && (
+                        <GripVertical className="h-5 w-5 mx-auto mb-1 text-primary" />
+                      )}
                       <p className="font-semibold text-foreground text-sm md:text-base">
                         {zone.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {zone.deviceCount}个设备
                       </p>
+                      {isEditMode && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {zone.position.x.toFixed(0)}, {zone.position.y.toFixed(0)} - {zone.position.width.toFixed(0)}×{zone.position.height.toFixed(0)}
+                        </p>
+                      )}
                     </div>
                   </div>
 
+                  {/* 调整大小的控制点 */}
+                  {isEditMode && (
+                    <>
+                      {['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map(handle => (
+                        <div
+                          key={handle}
+                          className="absolute w-3 h-3 bg-primary border-2 border-white rounded-full pointer-events-auto"
+                          style={{
+                            cursor: `${handle}-resize`,
+                            ...(handle.includes('n') && { top: '-6px' }),
+                            ...(handle.includes('s') && { bottom: '-6px' }),
+                            ...(handle.includes('w') && { left: '-6px' }),
+                            ...(handle.includes('e') && { right: '-6px' }),
+                            ...(!handle.includes('n') && !handle.includes('s') && { top: 'calc(50% - 6px)' }),
+                            ...(!handle.includes('w') && !handle.includes('e') && { left: 'calc(50% - 6px)' }),
+                          }}
+                          onMouseDown={(e) => handleMouseDown(e, zone.id, handle)}
+                        />
+                      ))}
+                    </>
+                  )}
+
                   {/* Hover tooltip */}
-                  {isHovered && (
+                  {isHovered && !isEditMode && (
                     <div className="absolute left-full ml-4 top-0 z-20 w-80">
                       <Card className="p-4 shadow-xl">
                         <h3 className="font-semibold mb-3 text-foreground">{zone.name}</h3>
