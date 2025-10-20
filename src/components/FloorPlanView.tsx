@@ -1,10 +1,17 @@
 import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AirVent, Lightbulb, Plug, Thermometer, PowerOff, Edit, Save, GripVertical } from "lucide-react";
+import { AirVent, Lightbulb, Plug, Thermometer, PowerOff, Edit, Save, GripVertical, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import floorPlanBg from "@/assets/floor-plan-bg.jpg";
 import { DeviceTimeline } from "./DeviceTimeline";
+import { Switch } from "@/components/ui/switch";
+
+interface DeviceItem {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
 
 interface Zone {
   id: string;
@@ -13,10 +20,10 @@ interface Zone {
   position: { x: number; y: number; width: number; height: number };
   color: string;
   devices: {
-    空调: { total: number; active: number };
-    灯光: { total: number; active: number };
-    传感器: { total: number; active: number };
-    开关: { total: number; active: number };
+    空调: { total: number; active: number; items: DeviceItem[] };
+    灯光: { total: number; active: number; items: DeviceItem[] };
+    传感器: { total: number; active: number; items: DeviceItem[] };
+    开关: { total: number; active: number; items: DeviceItem[] };
   };
 }
 
@@ -28,10 +35,45 @@ const zones: Zone[] = [
     position: { x: 2, y: 5, width: 20, height: 28 },
     color: "rgba(254, 249, 195, 0.5)",
     devices: {
-      空调: { total: 3, active: 2 },
-      灯光: { total: 6, active: 4 },
-      传感器: { total: 4, active: 4 },
-      开关: { total: 2, active: 1 },
+      空调: { 
+        total: 3, 
+        active: 2,
+        items: [
+          { id: "ac-1", name: "空调-01", isActive: true },
+          { id: "ac-2", name: "空调-02", isActive: true },
+          { id: "ac-3", name: "空调-03", isActive: false },
+        ]
+      },
+      灯光: { 
+        total: 6, 
+        active: 4,
+        items: [
+          { id: "light-1", name: "灯光-01", isActive: true },
+          { id: "light-2", name: "灯光-02", isActive: true },
+          { id: "light-3", name: "灯光-03", isActive: true },
+          { id: "light-4", name: "灯光-04", isActive: true },
+          { id: "light-5", name: "灯光-05", isActive: false },
+          { id: "light-6", name: "灯光-06", isActive: false },
+        ]
+      },
+      传感器: { 
+        total: 4, 
+        active: 4,
+        items: [
+          { id: "sensor-1", name: "传感器-01", isActive: true },
+          { id: "sensor-2", name: "传感器-02", isActive: true },
+          { id: "sensor-3", name: "传感器-03", isActive: true },
+          { id: "sensor-4", name: "传感器-04", isActive: true },
+        ]
+      },
+      开关: { 
+        total: 2, 
+        active: 1,
+        items: [
+          { id: "switch-1", name: "开关-01", isActive: true },
+          { id: "switch-2", name: "开关-02", isActive: false },
+        ]
+      },
     },
   },
   {
@@ -41,10 +83,38 @@ const zones: Zone[] = [
     position: { x: 2, y: 35, width: 20, height: 20 },
     color: "rgba(207, 250, 254, 0.5)",
     devices: {
-      空调: { total: 2, active: 1 },
-      灯光: { total: 3, active: 2 },
-      传感器: { total: 2, active: 2 },
-      开关: { total: 1, active: 1 },
+      空调: { 
+        total: 2, 
+        active: 1,
+        items: [
+          { id: "ac-4", name: "空调-04", isActive: true },
+          { id: "ac-5", name: "空调-05", isActive: false },
+        ]
+      },
+      灯光: { 
+        total: 3, 
+        active: 2,
+        items: [
+          { id: "light-7", name: "灯光-07", isActive: true },
+          { id: "light-8", name: "灯光-08", isActive: true },
+          { id: "light-9", name: "灯光-09", isActive: false },
+        ]
+      },
+      传感器: { 
+        total: 2, 
+        active: 2,
+        items: [
+          { id: "sensor-5", name: "传感器-05", isActive: true },
+          { id: "sensor-6", name: "传感器-06", isActive: true },
+        ]
+      },
+      开关: { 
+        total: 1, 
+        active: 1,
+        items: [
+          { id: "switch-3", name: "开关-03", isActive: true },
+        ]
+      },
     },
   },
   {
@@ -54,10 +124,10 @@ const zones: Zone[] = [
     position: { x: 24, y: 5, width: 28, height: 28 },
     color: "rgba(186, 230, 253, 0.5)",
     devices: {
-      空调: { total: 4, active: 3 },
-      灯光: { total: 8, active: 6 },
-      传感器: { total: 4, active: 4 },
-      开关: { total: 2, active: 2 },
+      空调: { total: 4, active: 3, items: [{ id: "ac-6", name: "空调-06", isActive: true }, { id: "ac-7", name: "空调-07", isActive: true }, { id: "ac-8", name: "空调-08", isActive: true }, { id: "ac-9", name: "空调-09", isActive: false }] },
+      灯光: { total: 8, active: 6, items: [{ id: "light-10", name: "灯光-10", isActive: true }, { id: "light-11", name: "灯光-11", isActive: true }, { id: "light-12", name: "灯光-12", isActive: true }, { id: "light-13", name: "灯光-13", isActive: true }, { id: "light-14", name: "灯光-14", isActive: true }, { id: "light-15", name: "灯光-15", isActive: true }, { id: "light-16", name: "灯光-16", isActive: false }, { id: "light-17", name: "灯光-17", isActive: false }] },
+      传感器: { total: 4, active: 4, items: [{ id: "sensor-7", name: "传感器-07", isActive: true }, { id: "sensor-8", name: "传感器-08", isActive: true }, { id: "sensor-9", name: "传感器-09", isActive: true }, { id: "sensor-10", name: "传感器-10", isActive: true }] },
+      开关: { total: 2, active: 2, items: [{ id: "switch-4", name: "开关-04", isActive: true }, { id: "switch-5", name: "开关-05", isActive: true }] },
     },
   },
   {
@@ -67,10 +137,10 @@ const zones: Zone[] = [
     position: { x: 24, y: 35, width: 28, height: 20 },
     color: "rgba(187, 247, 208, 0.5)",
     devices: {
-      空调: { total: 1, active: 1 },
-      灯光: { total: 3, active: 2 },
-      传感器: { total: 1, active: 1 },
-      开关: { total: 1, active: 0 },
+      空调: { total: 1, active: 1, items: [{ id: "ac-10", name: "空调-10", isActive: true }] },
+      灯光: { total: 3, active: 2, items: [{ id: "light-18", name: "灯光-18", isActive: true }, { id: "light-19", name: "灯光-19", isActive: true }, { id: "light-20", name: "灯光-20", isActive: false }] },
+      传感器: { total: 1, active: 1, items: [{ id: "sensor-11", name: "传感器-11", isActive: true }] },
+      开关: { total: 1, active: 0, items: [{ id: "switch-6", name: "开关-06", isActive: false }] },
     },
   },
   {
@@ -80,10 +150,10 @@ const zones: Zone[] = [
     position: { x: 54, y: 5, width: 44, height: 28 },
     color: "rgba(254, 202, 202, 0.5)",
     devices: {
-      空调: { total: 5, active: 4 },
-      灯光: { total: 10, active: 8 },
-      传感器: { total: 6, active: 6 },
-      开关: { total: 3, active: 2 },
+      空调: { total: 5, active: 4, items: [{ id: "ac-11", name: "空调-11", isActive: true }, { id: "ac-12", name: "空调-12", isActive: true }, { id: "ac-13", name: "空调-13", isActive: true }, { id: "ac-14", name: "空调-14", isActive: true }, { id: "ac-15", name: "空调-15", isActive: false }] },
+      灯光: { total: 10, active: 8, items: [{ id: "light-21", name: "灯光-21", isActive: true }, { id: "light-22", name: "灯光-22", isActive: true }, { id: "light-23", name: "灯光-23", isActive: true }, { id: "light-24", name: "灯光-24", isActive: true }, { id: "light-25", name: "灯光-25", isActive: true }, { id: "light-26", name: "灯光-26", isActive: true }, { id: "light-27", name: "灯光-27", isActive: true }, { id: "light-28", name: "灯光-28", isActive: true }, { id: "light-29", name: "灯光-29", isActive: false }, { id: "light-30", name: "灯光-30", isActive: false }] },
+      传感器: { total: 6, active: 6, items: [{ id: "sensor-12", name: "传感器-12", isActive: true }, { id: "sensor-13", name: "传感器-13", isActive: true }, { id: "sensor-14", name: "传感器-14", isActive: true }, { id: "sensor-15", name: "传感器-15", isActive: true }, { id: "sensor-16", name: "传感器-16", isActive: true }, { id: "sensor-17", name: "传感器-17", isActive: true }] },
+      开关: { total: 3, active: 2, items: [{ id: "switch-7", name: "开关-07", isActive: true }, { id: "switch-8", name: "开关-08", isActive: true }, { id: "switch-9", name: "开关-09", isActive: false }] },
     },
   },
   {
@@ -93,10 +163,10 @@ const zones: Zone[] = [
     position: { x: 54, y: 35, width: 44, height: 20 },
     color: "rgba(221, 214, 254, 0.5)",
     devices: {
-      空调: { total: 4, active: 3 },
-      灯光: { total: 9, active: 7 },
-      传感器: { total: 5, active: 5 },
-      开关: { total: 2, active: 1 },
+      空调: { total: 4, active: 3, items: [{ id: "ac-16", name: "空调-16", isActive: true }, { id: "ac-17", name: "空调-17", isActive: true }, { id: "ac-18", name: "空调-18", isActive: true }, { id: "ac-19", name: "空调-19", isActive: false }] },
+      灯光: { total: 9, active: 7, items: [{ id: "light-31", name: "灯光-31", isActive: true }, { id: "light-32", name: "灯光-32", isActive: true }, { id: "light-33", name: "灯光-33", isActive: true }, { id: "light-34", name: "灯光-34", isActive: true }, { id: "light-35", name: "灯光-35", isActive: true }, { id: "light-36", name: "灯光-36", isActive: true }, { id: "light-37", name: "灯光-37", isActive: true }, { id: "light-38", name: "灯光-38", isActive: false }, { id: "light-39", name: "灯光-39", isActive: false }] },
+      传感器: { total: 5, active: 5, items: [{ id: "sensor-18", name: "传感器-18", isActive: true }, { id: "sensor-19", name: "传感器-19", isActive: true }, { id: "sensor-20", name: "传感器-20", isActive: true }, { id: "sensor-21", name: "传感器-21", isActive: true }, { id: "sensor-22", name: "传感器-22", isActive: true }] },
+      开关: { total: 2, active: 1, items: [{ id: "switch-10", name: "开关-10", isActive: true }, { id: "switch-11", name: "开关-11", isActive: false }] },
     },
   },
   {
@@ -106,10 +176,10 @@ const zones: Zone[] = [
     position: { x: 2, y: 57, width: 48, height: 38 },
     color: "rgba(251, 207, 232, 0.5)",
     devices: {
-      空调: { total: 3, active: 2 },
-      灯光: { total: 6, active: 4 },
-      传感器: { total: 2, active: 2 },
-      开关: { total: 2, active: 1 },
+      空调: { total: 3, active: 2, items: [{ id: "ac-20", name: "空调-20", isActive: true }, { id: "ac-21", name: "空调-21", isActive: true }, { id: "ac-22", name: "空调-22", isActive: false }] },
+      灯光: { total: 6, active: 4, items: [{ id: "light-40", name: "灯光-40", isActive: true }, { id: "light-41", name: "灯光-41", isActive: true }, { id: "light-42", name: "灯光-42", isActive: true }, { id: "light-43", name: "灯光-43", isActive: true }, { id: "light-44", name: "灯光-44", isActive: false }, { id: "light-45", name: "灯光-45", isActive: false }] },
+      传感器: { total: 2, active: 2, items: [{ id: "sensor-23", name: "传感器-23", isActive: true }, { id: "sensor-24", name: "传感器-24", isActive: true }] },
+      开关: { total: 2, active: 1, items: [{ id: "switch-12", name: "开关-12", isActive: true }, { id: "switch-13", name: "开关-13", isActive: false }] },
     },
   },
 ];
@@ -121,6 +191,7 @@ export const FloorPlanView = () => {
   const [editableZones, setEditableZones] = useState<Zone[]>(zones);
   const [draggingZone, setDraggingZone] = useState<string | null>(null);
   const [resizingZone, setResizingZone] = useState<{ id: string; handle: string } | null>(null);
+  const [expandedDeviceTypes, setExpandedDeviceTypes] = useState<Record<string, boolean>>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const dragStartPos = useRef<{ x: number; y: number; zoneX: number; zoneY: number } | null>(null);
   const resizeStartPos = useRef<{ x: number; y: number; width: number; height: number; posX: number; posY: number } | null>(null);
@@ -130,7 +201,20 @@ export const FloorPlanView = () => {
   };
 
   const handleCloseAll = (zoneId: string, deviceType: string) => {
+    toast.success(`已关闭${zoneId}的所有${deviceType}`);
     console.log(`关闭 ${zoneId} 的所有 ${deviceType}`);
+  };
+
+  const handleDeviceToggle = (zoneId: string, deviceType: string, deviceId: string, currentState: boolean) => {
+    toast.success(`${deviceId} 已${currentState ? '关闭' : '开启'}`);
+    console.log(`${deviceId} 从 ${currentState} 切换到 ${!currentState}`);
+  };
+
+  const toggleDeviceTypeExpand = (key: string) => {
+    setExpandedDeviceTypes(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
   };
 
   const toggleEditMode = () => {
@@ -352,36 +436,71 @@ export const FloorPlanView = () => {
 
                   {/* Hover tooltip */}
                   {isHovered && !isEditMode && (
-                    <div className="absolute left-full ml-4 top-0 z-20 w-80">
+                    <div className="absolute left-full ml-4 top-0 z-20 w-96">
                       <Card className="p-4 shadow-xl">
                         <h3 className="font-semibold mb-3 text-foreground">{zone.name}</h3>
-                        <div className="space-y-2">
-                          {Object.entries(zone.devices).map(([type, count]) => (
-                            <div key={type} className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                {type === "空调" && <AirVent className="h-4 w-4 text-primary" />}
-                                {type === "灯光" && <Lightbulb className="h-4 w-4 text-primary" />}
-                                {type === "传感器" && <Thermometer className="h-4 w-4 text-primary" />}
-                                {type === "开关" && <Plug className="h-4 w-4 text-primary" />}
-                                <span className="text-sm text-foreground">{type}:</span>
-                                <span className="text-sm text-muted-foreground">
-                                  {count.active}/{count.total} 开启中
-                                </span>
+                        <div className="space-y-3">
+                          {Object.entries(zone.devices).map(([type, deviceInfo]) => {
+                            const expandKey = `${zone.id}-${type}`;
+                            const isExpanded = expandedDeviceTypes[expandKey];
+                            
+                            return (
+                              <div key={type} className="border rounded-lg p-2">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2 flex-1">
+                                    {type === "空调" && <AirVent className="h-4 w-4 text-primary" />}
+                                    {type === "灯光" && <Lightbulb className="h-4 w-4 text-primary" />}
+                                    {type === "传感器" && <Thermometer className="h-4 w-4 text-primary" />}
+                                    {type === "开关" && <Plug className="h-4 w-4 text-primary" />}
+                                    <span className="text-sm text-foreground">{type}:</span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {deviceInfo.active}/{deviceInfo.total} 开启中
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleDeviceTypeExpand(expandKey);
+                                      }}
+                                      className="h-7 w-7 p-0"
+                                    >
+                                      {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCloseAll(zone.id, type);
+                                      }}
+                                      className="h-7 text-xs"
+                                    >
+                                      <PowerOff className="h-3 w-3 mr-1" />
+                                      全部关闭
+                                    </Button>
+                                  </div>
+                                </div>
+                                
+                                {isExpanded && (
+                                  <div className="space-y-1 mt-2 pl-6">
+                                    {deviceInfo.items.map((device) => (
+                                      <div key={device.id} className="flex items-center justify-between py-1">
+                                        <span className="text-xs text-foreground">{device.name}</span>
+                                        <Switch
+                                          checked={device.isActive}
+                                          onCheckedChange={() => handleDeviceToggle(zone.id, type, device.name, device.isActive)}
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleCloseAll(zone.id, type);
-                                }}
-                                className="h-7 text-xs"
-                              >
-                                <PowerOff className="h-3 w-3 mr-1" />
-                                全部关闭
-                              </Button>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </Card>
                     </div>
