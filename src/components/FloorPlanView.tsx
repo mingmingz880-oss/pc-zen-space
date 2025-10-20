@@ -1,11 +1,13 @@
 import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AirVent, Lightbulb, Plug, Thermometer, PowerOff, Edit, Save, GripVertical, ChevronDown, ChevronUp } from "lucide-react";
+import { AirVent, Lightbulb, Plug, Thermometer, PowerOff, Edit, Save, GripVertical, ChevronDown, ChevronUp, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import floorPlanBg from "@/assets/floor-plan-bg.jpg";
 import { DeviceTimeline } from "./DeviceTimeline";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 
 interface DeviceItem {
   id: string;
@@ -192,6 +194,7 @@ export const FloorPlanView = () => {
   const [draggingZone, setDraggingZone] = useState<string | null>(null);
   const [resizingZone, setResizingZone] = useState<{ id: string; handle: string } | null>(null);
   const [expandedDeviceTypes, setExpandedDeviceTypes] = useState<Record<string, boolean>>({});
+  const [deviceFilter, setDeviceFilter] = useState<string>("all");
   const containerRef = useRef<HTMLDivElement>(null);
   const dragStartPos = useRef<{ x: number; y: number; zoneX: number; zoneY: number } | null>(null);
   const resizeStartPos = useRef<{ x: number; y: number; width: number; height: number; posX: number; posY: number } | null>(null);
@@ -404,6 +407,28 @@ export const FloorPlanView = () => {
                       <p className="text-xs text-muted-foreground">
                         {zone.deviceCount}个设备
                       </p>
+                      {!isEditMode && (() => {
+                        const activeDevices = Object.entries(zone.devices)
+                          .filter(([_, info]) => info.active > 0)
+                          .map(([type, info]) => ({ type, count: info.active }));
+                        
+                        if (activeDevices.length > 0) {
+                          return (
+                            <div className="flex flex-wrap gap-1 justify-center mt-2">
+                              {activeDevices.map(({ type, count }) => (
+                                <Badge key={type} variant="secondary" className="text-xs px-1.5 py-0.5">
+                                  {type === "空调" && <AirVent className="h-3 w-3 mr-0.5" />}
+                                  {type === "灯光" && <Lightbulb className="h-3 w-3 mr-0.5" />}
+                                  {type === "传感器" && <Thermometer className="h-3 w-3 mr-0.5" />}
+                                  {type === "开关" && <Plug className="h-3 w-3 mr-0.5" />}
+                                  {count}
+                                </Badge>
+                              ))}
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                       {isEditMode && (
                         <p className="text-xs text-muted-foreground mt-1">
                           {zone.position.x.toFixed(0)}, {zone.position.y.toFixed(0)} - {zone.position.width.toFixed(0)}×{zone.position.height.toFixed(0)}
@@ -509,6 +534,37 @@ export const FloorPlanView = () => {
               );
             })}
           </div>
+        </div>
+        
+        {/* Device Filter Tabs */}
+        <div className="mt-4">
+          <Tabs value={deviceFilter} onValueChange={setDeviceFilter} className="w-full">
+            <TabsList className="w-full justify-start">
+              <TabsTrigger value="all" className="flex items-center gap-1">
+                全部
+              </TabsTrigger>
+              <TabsTrigger value="空调" className="flex items-center gap-1">
+                <AirVent className="h-4 w-4" />
+                空调
+              </TabsTrigger>
+              <TabsTrigger value="灯光" className="flex items-center gap-1">
+                <Lightbulb className="h-4 w-4" />
+                灯光
+              </TabsTrigger>
+              <TabsTrigger value="开关" className="flex items-center gap-1">
+                <Plug className="h-4 w-4" />
+                开关
+              </TabsTrigger>
+              <TabsTrigger value="传感器" className="flex items-center gap-1">
+                <Thermometer className="h-4 w-4" />
+                传感器
+              </TabsTrigger>
+              <TabsTrigger value="LED屏" className="flex items-center gap-1">
+                <Monitor className="h-4 w-4" />
+                LED屏
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
       </Card>
         </div>
