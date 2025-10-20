@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AirVent, Lightbulb, Plug, Thermometer, PowerOff, Edit, Save, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import floorPlanBg from "@/assets/floor-plan-bg.jpg";
+import { DeviceTimeline } from "./DeviceTimeline";
 
 interface Zone {
   id: string;
@@ -262,8 +263,10 @@ export const FloorPlanView = () => {
           )}
         </Button>
       </div>
-      
-      <Card className="p-6">
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <Card className="p-6">
         <div className="relative w-full" style={{ paddingBottom: "70%" }}>
           {/* Background image */}
           <div 
@@ -389,6 +392,12 @@ export const FloorPlanView = () => {
           </div>
         </div>
       </Card>
+        </div>
+
+        <div className="lg:col-span-1">
+          <DeviceTimeline />
+        </div>
+      </div>
 
       {selectedZone && (
         <Card className="p-4">
